@@ -1,4 +1,4 @@
 #!/bin/bash
 
 git pull git@github.com:robvangeloven/PiTree.git
-docker build -t PiTree -f Docker.arm32 .
+docker image build -t robvangeloven/pi-tree -f Docker.arm32 .
