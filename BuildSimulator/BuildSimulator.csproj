@@ -7,8 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\PiTree\appsettings.json" Link="appsettings.json" />
-    <Content Include="..\PiTree\appsettings_dev.json" Link="appsettings_dev.json" />
+    <Content Include="..\PiTree\appsettings.json" Link="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\PiTree\appsettings_dev.json" Link="appsettings_dev.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

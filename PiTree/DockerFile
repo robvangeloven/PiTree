@@ -1,4 +1,5 @@
 ﻿FROM microsoft/dotnet:2.1-sdk AS build-env
+COPY qemu-arm-static /usr/bin/
 WORKDIR /app
 
 # Copy csproj and restore as distinct layers
