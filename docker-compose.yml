@@ -1,0 +1,9 @@
+version: '3'
+  services:
+    pi_tree:
+      container_name: pi-tree
+      image: robvangeloven/pi-tree
+      devices:
+        - /dev/gpiomem:/dev/gpiomem
+      restart: always
+      network_mode: host
