@@ -28,7 +28,7 @@ namespace PiTree.Monitor.ServiceBus
         public async Task Start()
         {
             await _outputService.Start();
-            _queueClient = new QueueClient(_options.CurrentValue.ServiceBusConnectionString, _options.CurrentValue.QueueName);
+            _queueClient = new QueueClient(_options.CurrentValue.QueueConnectionString, _options.CurrentValue.QueueName);
 
             await ShowLastBuildStatus();
 

@@ -4,8 +4,6 @@
     {
         public string QueueConnectionString { get; set; }
 
-        public string ServiceBusConnectionString { get; set; }
-
         public string QueueName { get; set; }
 
         public string Endpoint { get; set; }
