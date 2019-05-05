@@ -6,33 +6,26 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using PiTree.Shared;
+using Microsoft.Extensions.Options;
 
-namespace PiTree.Services
+namespace PiTree.Monitor.AzureDevopsAPI
 {
-    internal class AzureDevopsApiService : IMonitorService
+    public class AzureDevopsApiService : IMonitorService
     {
-        private string _personalAccessToken;
-        private string _endpoint;
         private CancellationTokenSource _cancellationTokenSource;
 
+        private IOptionsMonitor<AzureDevopsApiOptions> _options;
         private IOutputService _outputService;
 
-        public AzureDevopsApiService(IOutputService outputService)
+        public AzureDevopsApiService(
+            IOutputService outputService,
+            IOptionsMonitor<AzureDevopsApiOptions> options)
         {
             _outputService = outputService;
-
-            //_endpoint = config["Endpoint"];
-            //_personalAccessToken = config["PersonalAccessToken"];
-
-            //int.TryParse(config["NumberOfBuilds"], out var numberOfBuilds);
-
-            //if (numberOfBuilds > 0)
-            //{
-            //    _endpoint += $"&$top={numberOfBuilds}";
-            //}
+            _options = options;
         }
 
-        private MonitorStatus GetBuildStatus()
+        private async Task<MonitorStatus> GetBuildStatus()
         {
             var result = MonitorStatus.Failed;
 
@@ -43,12 +36,12 @@ namespace PiTree.Services
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _personalAccessToken))));
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _options.CurrentValue.PersonalAccessToken))));
 
-                    using (var response = client.GetAsync(_endpoint).Result)
+                    using (var response = await client.GetAsync(_options.CurrentValue.Endpoint))
                     {
                         response.EnsureSuccessStatusCode();
-                        dynamic responseBody = JsonConvert.DeserializeObject(response.Content.ReadAsStringAsync().Result);
+                        dynamic responseBody = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync());
 
                         foreach (dynamic item in responseBody.value)
                         {
@@ -89,7 +82,7 @@ namespace PiTree.Services
              {
                  while (true)
                  {
-                     await _outputService.SignalNewStatus(GetBuildStatus());
+                     await _outputService.SignalNewStatus(await GetBuildStatus());
 
                      await Task.Delay(new TimeSpan(0, 1, 0), _cancellationTokenSource.Token);
                  }

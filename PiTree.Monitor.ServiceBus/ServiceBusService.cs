@@ -5,34 +5,30 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PiTree.Shared;
 
-namespace PiTree.Services
+namespace PiTree.Monitor.ServiceBus
 {
     public class ServiceBusService : IMonitorService
     {
-        private string _serviceBusConnectionString;
-        private string _queueName;
-        private string _personalAccessToken;
-        private string _endpoint;
         private static IQueueClient _queueClient;
-
         private IOutputService _outputService;
+        private IOptionsMonitor<ServiceBusOptions> _options;
 
-        public ServiceBusService(IOutputService outputService)
+        public ServiceBusService(
+            IOutputService outputService,
+            IOptionsMonitor<ServiceBusOptions> options)
         {
             _outputService = outputService;
-            //_serviceBusConnectionString = config["QueueConnectionString"];
-            //_queueName = config["QueueName"];
-            //_endpoint = $"{config["Endpoint"]}&$top=1";
-            //_personalAccessToken = config["PersonalAccessToken"];
+            _options = options;
         }
 
         public async Task Start()
         {
             await _outputService.Start();
-            _queueClient = new QueueClient(_serviceBusConnectionString, _queueName);
+            _queueClient = new QueueClient(_options.CurrentValue.ServiceBusConnectionString, _options.CurrentValue.QueueName);
 
             await ShowLastBuildStatus();
 
@@ -68,9 +64,9 @@ namespace PiTree.Services
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _personalAccessToken))));
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _options.CurrentValue.PersonalAccessToken))));
 
-                    using (var response = await client.GetAsync(_endpoint))
+                    using (var response = await client.GetAsync(_options.CurrentValue.Endpoint))
                     {
                         response.EnsureSuccessStatusCode();
                         dynamic responseBody = JsonConvert.DeserializeObject(response.Content.ReadAsStringAsync().Result);

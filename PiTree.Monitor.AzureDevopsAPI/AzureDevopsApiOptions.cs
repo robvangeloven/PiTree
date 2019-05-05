@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PiTree.Monitor.AzureDevopsAPI
+﻿namespace PiTree.Monitor.AzureDevopsAPI
 {
     public class AzureDevopsApiOptions
     {
+        public string Endpoint { get; set; }
+
+        public string PersonalAccessToken { get; set; }
     }
 }
