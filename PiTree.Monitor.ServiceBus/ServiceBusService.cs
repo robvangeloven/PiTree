@@ -5,13 +5,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using PiTree.WiringPi;
+using PiTree.Shared;
 
 namespace PiTree.Services
 {
-    public class QueueService : BaseService
+    public class ServiceBusService : IMonitorService
     {
         private string _serviceBusConnectionString;
         private string _queueName;
@@ -19,47 +18,48 @@ namespace PiTree.Services
         private string _endpoint;
         private static IQueueClient _queueClient;
 
-        public QueueService(IConfiguration config)
+        private IOutputService _outputService;
+
+        public ServiceBusService(IOutputService outputService)
         {
-            _serviceBusConnectionString = config["QueueConnectionString"];
-            _queueName = config["QueueName"];
-            _endpoint = $"{config["Endpoint"]}&$top=1";
-            _personalAccessToken = config["PersonalAccessToken"];
+            _outputService = outputService;
+            //_serviceBusConnectionString = config["QueueConnectionString"];
+            //_queueName = config["QueueName"];
+            //_endpoint = $"{config["Endpoint"]}&$top=1";
+            //_personalAccessToken = config["PersonalAccessToken"];
         }
 
-        public override async Task Start()
+        public async Task Start()
         {
-            await base.Start();
-
+            await _outputService.Start();
             _queueClient = new QueueClient(_serviceBusConnectionString, _queueName);
 
-            ShowLastBuildStatus();
+            await ShowLastBuildStatus();
 
             // Register QueueClient's MessageHandler and receive messages in a loop
             RegisterOnMessageHandlerAndReceiveMessages();
         }
 
-        public override async Task Stop()
+        public async Task Stop()
         {
-            await base.Stop();
-
+            await _outputService.Stop();
             await _queueClient.CloseAsync();
         }
 
-        private BuildStatus ParseBuildStatus(string buildStatus)
+        private MonitorStatus ParseBuildStatus(string buildStatus)
         {
             switch (buildStatus)
             {
-                case "succeeded": return BuildStatus.Succeeded;
-                case "partiallySucceeded": return BuildStatus.PartiallySucceeded;
+                case "succeeded": return MonitorStatus.Succeeded;
+                case "partiallySucceeded": return MonitorStatus.PartiallySucceeded;
                 default:
-                case "failed": return BuildStatus.Failed;
+                case "failed": return MonitorStatus.Failed;
             }
         }
 
-        private void ShowLastBuildStatus()
+        private async Task ShowLastBuildStatus()
         {
-            BuildStatus result = BuildStatus.Failed;
+            var result = MonitorStatus.Failed;
 
             try
             {
@@ -70,7 +70,7 @@ namespace PiTree.Services
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
                         Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _personalAccessToken))));
 
-                    using (var response = client.GetAsync(_endpoint).Result)
+                    using (var response = await client.GetAsync(_endpoint))
                     {
                         response.EnsureSuccessStatusCode();
                         dynamic responseBody = JsonConvert.DeserializeObject(response.Content.ReadAsStringAsync().Result);
@@ -84,7 +84,7 @@ namespace PiTree.Services
                 Console.WriteLine($"[{DateTimeOffset.Now}] {ex.ToString()}");
             }
 
-            LightHelper.ShowBuildStatus(result);
+            await _outputService.SignalNewStatus(result);
         }
 
         private async Task ProcessMessagesAsync(Message message, CancellationToken token)
@@ -96,7 +96,7 @@ namespace PiTree.Services
                 // Process the message
                 dynamic body = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body));
 
-                LightHelper.ShowBuildStatus(ParseBuildStatus((string)body.resource.status));
+                await _outputService.SignalNewStatus(ParseBuildStatus((string)body.resource.status));
             }
             catch (Exception ex)
             {

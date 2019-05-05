@@ -38,12 +38,12 @@
 
 using System.Runtime.InteropServices;
 
-namespace PiTree.WiringPi
+namespace PiTree.OutputServices.GPIO
 {
     /// <summary>
     /// Used to initialise Gordon's library, there's 4 different ways to initialise and we're going to support all 4
     /// </summary>
-    public class Init
+    internal class Init
     {
         [DllImport("libwiringPi.so", EntryPoint = "wiringPiSetup")]     //This is an example of how to call a method / function in a c library from c#
         public static extern int WiringPiSetup();
@@ -61,7 +61,7 @@ namespace PiTree.WiringPi
     /// <summary>
     /// Used to configure a GPIO pin's direction and provide read & write functions to a GPIO pin
     /// </summary>
-    public class GPIO
+    internal class GPIO
     {
         [DllImport("libwiringPi.so", EntryPoint = "pinMode")]           //Uses Gpio pin numbers
         public static extern void pinMode(int pin, int mode);

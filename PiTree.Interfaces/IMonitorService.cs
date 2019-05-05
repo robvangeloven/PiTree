@@ -1,10 +1,11 @@
 ﻿using System.Threading.Tasks;
 
-namespace PiTree.Services
+namespace PiTree.Shared
 {
-    internal interface IService
+    public interface IMonitorService
     {
         Task Start();
+
         Task Stop();
     }
 }

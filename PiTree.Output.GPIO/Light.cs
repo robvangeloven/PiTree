@@ -1,6 +1,6 @@
-﻿namespace PiTree.WiringPi
+﻿namespace PiTree.OutputServices.GPIO
 {
-    public enum Light
+    internal enum Light
     {
         Green = 7,
         White = 8,

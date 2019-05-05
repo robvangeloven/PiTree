@@ -5,33 +5,36 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using PiTree.WiringPi;
+using PiTree.Shared;
 
 namespace PiTree.Services
 {
-    internal class ApiService : BaseService
+    internal class AzureDevopsApiService : IMonitorService
     {
         private string _personalAccessToken;
         private string _endpoint;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public ApiService(IConfiguration config)
+        private IOutputService _outputService;
+
+        public AzureDevopsApiService(IOutputService outputService)
         {
-            _endpoint = config["Endpoint"];
-            _personalAccessToken = config["PersonalAccessToken"];
+            _outputService = outputService;
 
-            int.TryParse(config["NumberOfBuilds"], out var numberOfBuilds);
+            //_endpoint = config["Endpoint"];
+            //_personalAccessToken = config["PersonalAccessToken"];
 
-            if (numberOfBuilds > 0)
-            {
-                _endpoint += $"&$top={numberOfBuilds}";
-            }
+            //int.TryParse(config["NumberOfBuilds"], out var numberOfBuilds);
+
+            //if (numberOfBuilds > 0)
+            //{
+            //    _endpoint += $"&$top={numberOfBuilds}";
+            //}
         }
 
-        private BuildStatus GetBuildStatus()
+        private MonitorStatus GetBuildStatus()
         {
-            BuildStatus result = BuildStatus.None;
+            var result = MonitorStatus.Failed;
 
             try
             {
@@ -52,16 +55,16 @@ namespace PiTree.Services
                             switch ((string)item.result)
                             {
                                 case "succeeded":
-                                    result |= BuildStatus.Succeeded;
+                                    result |= MonitorStatus.Succeeded;
                                     break;
 
                                 case "partiallySucceeded":
-                                    result |= BuildStatus.PartiallySucceeded;
+                                    result |= MonitorStatus.PartiallySucceeded;
                                     break;
 
                                 default:
                                 case "failed":
-                                    result |= BuildStatus.Failed;
+                                    result |= MonitorStatus.Failed;
                                     break;
                             }
                         }
@@ -76,28 +79,26 @@ namespace PiTree.Services
             return result;
         }
 
-        public override async Task Start()
+        public async Task Start()
         {
-            await base.Start();
+            await _outputService.Start();
 
             _cancellationTokenSource = new CancellationTokenSource();
 
             await Task.Run(async () =>
              {
-                 LightHelper.LightsOn();
-
                  while (true)
                  {
-                     LightHelper.ShowBuildStatus(GetBuildStatus());
+                     await _outputService.SignalNewStatus(GetBuildStatus());
 
                      await Task.Delay(new TimeSpan(0, 1, 0), _cancellationTokenSource.Token);
                  }
              }, _cancellationTokenSource.Token);
         }
 
-        public override async Task Stop()
+        public async Task Stop()
         {
-            await base.Stop();
+            await _outputService.Stop();
 
             _cancellationTokenSource.Cancel();
         }

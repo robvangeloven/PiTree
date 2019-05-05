@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using PiTree.OutputServices.GPIO;
 using PiTree.Services;
 
 namespace PiTree
@@ -20,8 +21,9 @@ namespace PiTree
 
             IConfigurationRoot configuration = builder.Build();
 
-            var service = new QueueService(configuration);
-            await service.Start();
+            var outputService = new GPIOService();
+            var monitorService = new ServiceBusService(outputService);
+            await monitorService.Start();
 
             Console.CancelKeyPress += (sender, eventArgs) =>
             {
@@ -31,7 +33,7 @@ namespace PiTree
 
             _quitEvent.WaitOne();
 
-            await service.Stop();
+            await monitorService.Stop();
         }
     }
 }

@@ -1,7 +1,8 @@
 ﻿using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
-using PiTree.WiringPi;
+using PiTree.OutputServices.GPIO;
+using PiTree.Shared;
 using System;
 using System.IO;
 using System.Text;
@@ -25,17 +26,19 @@ namespace BuildSimulator
 
             var queueClient = new QueueClient(serviceBusConnectionString, queueName);
 
+            var outputService = new GPIOService();
+
             while (true)
             {
                 Console.WriteLine("Please select build status or 'X' to quit:");
 
                 int index = 1;
 
-                Light[] lights = (Light[])Enum.GetValues(typeof(Light));
+                var monitorStates = (MonitorStatus[])Enum.GetValues(typeof(MonitorStatus));
 
-                foreach (var light in lights)
+                foreach (var state in monitorStates)
                 {
-                    Console.WriteLine($"{index++}) {light}");
+                    Console.WriteLine($"{index++}) {state}");
                 }
 
                 var userInput = Console.ReadLine();
@@ -45,22 +48,22 @@ namespace BuildSimulator
                     break;
                 }
 
-                if (int.TryParse(userInput, out int selectedLight))
+                if (int.TryParse(userInput, out int selectedState))
                 {
                     string command;
 
-                    switch (lights[selectedLight - 1])
+                    switch (monitorStates[selectedState - 1])
                     {
-                        case Light.Green:
+                        case MonitorStatus.Succeeded:
                             command = "succeeded";
                             break;
 
-                        case Light.White:
+                        case MonitorStatus.PartiallySucceeded:
                             command = "partiallySucceeded";
                             break;
 
                         default:
-                        case Light.Red:
+                        case MonitorStatus.Failed:
                             command = "failed";
                             break;
                     }
