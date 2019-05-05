@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using PiTree.Monitor.AzureDevopsAPI;
 using PiTree.Monitor.ServiceBus;
 using PiTree.OutputServices.GPIO;
+using PiTree.Shared;
 
 namespace PiTree
 {
@@ -32,9 +33,9 @@ namespace PiTree
                     x.AddConsole();
                     x.AddDebug();
                 })
-                .AddSingleton<AzureDevopsApiService>()
-                .AddSingleton<ServiceBusService>()
-                .AddSingleton<GPIOService>()
+                //.AddSingleton<AzureDevopsApiService>()
+                .AddSingleton<IMonitorService, ServiceBusService>()
+                .AddSingleton<IOutputService, GPIOService>()
                 .Configure<AzureDevopsApiOptions>(config.GetSection("AzureDevopsApi"))
                 .Configure<ServiceBusOptions>(config.GetSection("ServiceBusOptions"))
                 .BuildServiceProvider();
@@ -45,8 +46,8 @@ namespace PiTree
 
             logger.LogDebug("Starting PiTree");
 
-            var outputService = new GPIOService();
-            var monitorService = new ServiceBusService(outputService, null);
+            var outputService = services.GetService<IOutputService>();
+            var monitorService = services.GetService<IMonitorService>();
             await monitorService.Start();
 
             Console.CancelKeyPress += (sender, eventArgs) =>
