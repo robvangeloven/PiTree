@@ -14,6 +14,10 @@ namespace PiTree
 {
     internal class Program
     {
+        private const string AZURE_DEVOPS_API_SECTION = "Monitor:AzureDevopsApi";
+        private const string SERVICE_BUS_SECTION = "Monitor:ServiceBus";
+        private const string GPIO_SECTION = "Output:GPIO";
+
         private static ManualResetEvent _quitEvent = new ManualResetEvent(false);
 
         private static async Task Main(string[] args)
@@ -42,12 +46,26 @@ namespace PiTree
                     loggingBuilder.AddConsole();
                     loggingBuilder.AddDebug();
                 })
-                //.AddSingleton<AzureDevopsApiService>()
-                .AddSingleton<IMonitorService, ServiceBusService>()
+                .AddSingleton<IMonitorService>(serviceProvider =>
+                {
+                    if (config.GetSection(AZURE_DEVOPS_API_SECTION).Exists())
+                    {
+                        return serviceProvider.GetService<AzureDevopsApiService>();
+                    }
+
+                    if (config.GetSection(SERVICE_BUS_SECTION).Exists())
+                    {
+                        return serviceProvider.GetService<ServiceBusService>();
+                    }
+
+                    return null;
+                })
+                .AddSingleton<AzureDevopsApiService>()
+                .AddSingleton<ServiceBusService>()
                 .AddSingleton<IOutputService, GPIOService>()
-                .Configure<AzureDevopsApiOptions>(config.GetSection("AzureDevopsApi"))
-                .Configure<ServiceBusOptions>(config.GetSection("ServiceBusOptions"))
-                .Configure<GPIOServiceOptions>(config.GetSection("GPIOServiceOptions"))
+                .Configure<AzureDevopsApiOptions>(config.GetSection(AZURE_DEVOPS_API_SECTION))
+                .Configure<ServiceBusOptions>(config.GetSection(SERVICE_BUS_SECTION))
+                .Configure<GPIOServiceOptions>(config.GetSection(GPIO_SECTION))
                 .BuildServiceProvider();
 
             var logger = services.GetRequiredService<ILogger<Program>>();
