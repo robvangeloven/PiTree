@@ -17,9 +17,10 @@ namespace BuildSimulator
     {
         private static async Task Main(string[] args)
         {
+            // Setup Config
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"config{Path.DirectorySeparatorChar}appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile("appsettings_dev.json", optional: true, reloadOnChange: true);
 
             var config = builder.Build();
