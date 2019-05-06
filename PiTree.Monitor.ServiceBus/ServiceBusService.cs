@@ -5,61 +5,61 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using PiTree.WiringPi;
+using PiTree.Shared;
 
-namespace PiTree.Services
+namespace PiTree.Monitor.ServiceBus
 {
-    public class QueueService : BaseService
+    public class ServiceBusService : IMonitorService
     {
-        private string _serviceBusConnectionString;
-        private string _queueName;
-        private string _personalAccessToken;
-        private string _endpoint;
         private static IQueueClient _queueClient;
+        private IOutputService _outputService;
+        private IOptionsMonitor<ServiceBusOptions> _options;
+        private ILogger _logger;
 
-        public QueueService(IConfiguration config)
+        public ServiceBusService(
+            IOutputService outputService,
+            IOptionsMonitor<ServiceBusOptions> options,
+            ILogger<ServiceBusService> logger)
         {
-            _serviceBusConnectionString = config["QueueConnectionString"];
-            _queueName = config["QueueName"];
-            _endpoint = $"{config["Endpoint"]}&$top=1";
-            _personalAccessToken = config["PersonalAccessToken"];
+            _outputService = outputService;
+            _options = options;
+            _logger = logger;
         }
 
-        public override async Task Start()
+        public async Task Start()
         {
-            await base.Start();
+            await _outputService.Start();
+            _queueClient = new QueueClient(_options.CurrentValue.QueueConnectionString, _options.CurrentValue.QueueName);
 
-            _queueClient = new QueueClient(_serviceBusConnectionString, _queueName);
-
-            ShowLastBuildStatus();
+            await ShowLastBuildStatus();
 
             // Register QueueClient's MessageHandler and receive messages in a loop
             RegisterOnMessageHandlerAndReceiveMessages();
         }
 
-        public override async Task Stop()
+        public async Task Stop()
         {
-            await base.Stop();
-
+            await _outputService.Stop();
             await _queueClient.CloseAsync();
         }
 
-        private BuildStatus ParseBuildStatus(string buildStatus)
+        private MonitorStatus ParseBuildStatus(string buildStatus)
         {
             switch (buildStatus)
             {
-                case "succeeded": return BuildStatus.Succeeded;
-                case "partiallySucceeded": return BuildStatus.PartiallySucceeded;
+                case "succeeded": return MonitorStatus.Succeeded;
+                case "partiallySucceeded": return MonitorStatus.PartiallySucceeded;
                 default:
-                case "failed": return BuildStatus.Failed;
+                case "failed": return MonitorStatus.Failed;
             }
         }
 
-        private void ShowLastBuildStatus()
+        private async Task ShowLastBuildStatus()
         {
-            BuildStatus result = BuildStatus.Failed;
+            var result = MonitorStatus.Failed;
 
             try
             {
@@ -68,9 +68,9 @@ namespace PiTree.Services
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                        Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _personalAccessToken))));
+                        Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _options.CurrentValue.PersonalAccessToken))));
 
-                    using (var response = client.GetAsync(_endpoint).Result)
+                    using (var response = await client.GetAsync(_options.CurrentValue.Endpoint))
                     {
                         response.EnsureSuccessStatusCode();
                         dynamic responseBody = JsonConvert.DeserializeObject(response.Content.ReadAsStringAsync().Result);
@@ -84,23 +84,23 @@ namespace PiTree.Services
                 Console.WriteLine($"[{DateTimeOffset.Now}] {ex.ToString()}");
             }
 
-            LightHelper.ShowBuildStatus(result);
+            await _outputService.SignalNewStatus(result);
         }
 
         private async Task ProcessMessagesAsync(Message message, CancellationToken token)
         {
             try
             {
-                Console.WriteLine(JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body)));
+                _logger.LogDebug(JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body)).ToString());
 
                 // Process the message
                 dynamic body = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body));
 
-                LightHelper.ShowBuildStatus(ParseBuildStatus((string)body.resource.status));
+                await _outputService.SignalNewStatus(ParseBuildStatus((string)body.resource.status));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTimeOffset.Now}] {ex.ToString()}");
+                _logger.LogError($"[{DateTimeOffset.Now}] {ex.ToString()}");
             }
 
             // Complete the message so that it is not received again.
@@ -109,16 +109,14 @@ namespace PiTree.Services
             await _queueClient.CompleteAsync(message.SystemProperties.LockToken);
         }
 
-        private Task ExceptionReceivedHandler(ExceptionReceivedEventArgs exceptionReceivedEventArgs)
-        {
-            Console.WriteLine($"Message handler encountered an exception {exceptionReceivedEventArgs.Exception}.");
-            return Task.CompletedTask;
-        }
-
         private void RegisterOnMessageHandlerAndReceiveMessages()
         {
             // Configure the MessageHandler Options in terms of exception handling, number of concurrent messages to deliver etc.
-            var messageHandlerOptions = new MessageHandlerOptions(ExceptionReceivedHandler)
+            var messageHandlerOptions = new MessageHandlerOptions(exceptionReceivedEvent =>
+            {
+                _logger.LogError($"Message handler encountered an exception {exceptionReceivedEvent.Exception}.");
+                return Task.CompletedTask;
+            })
             {
                 // Maximum number of Concurrent calls to the callback `ProcessMessagesAsync`, set to 1 for simplicity.
                 // Set it according to how many messages the application wants to process in parallel.

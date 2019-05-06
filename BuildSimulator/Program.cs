@@ -1,7 +1,11 @@
 ﻿using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using PiTree.WiringPi;
+using PiTree.Monitor.ServiceBus;
+using PiTree.Shared;
 using System;
 using System.IO;
 using System.Text;
@@ -13,17 +17,27 @@ namespace BuildSimulator
     {
         private static async Task Main(string[] args)
         {
+            // Setup Config
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"config{Path.DirectorySeparatorChar}appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile("appsettings_dev.json", optional: true, reloadOnChange: true);
 
-            IConfigurationRoot configuration = builder.Build();
+            var config = builder.Build();
 
-            string serviceBusConnectionString = configuration["QueueConnectionString"];
-            string queueName = configuration["QueueName"];
+            // Setup DI
+            var services = new ServiceCollection()
+                .AddLogging(loggingBuilder =>
+                {
+                    loggingBuilder.AddConsole();
+                    loggingBuilder.AddDebug();
+                })
+                .Configure<ServiceBusOptions>(config.GetSection("ServiceBusOptions"))
+                .BuildServiceProvider();
 
-            var queueClient = new QueueClient(serviceBusConnectionString, queueName);
+            var serviceBusOptions = services.GetService<IOptionsMonitor<ServiceBusOptions>>();
+
+            var queueClient = new QueueClient(serviceBusOptions.CurrentValue.QueueConnectionString, serviceBusOptions.CurrentValue.QueueName);
 
             while (true)
             {
@@ -31,11 +45,11 @@ namespace BuildSimulator
 
                 int index = 1;
 
-                Light[] lights = (Light[])Enum.GetValues(typeof(Light));
+                var monitorStates = (MonitorStatus[])Enum.GetValues(typeof(MonitorStatus));
 
-                foreach (var light in lights)
+                foreach (var state in monitorStates)
                 {
-                    Console.WriteLine($"{index++}) {light}");
+                    Console.WriteLine($"{index++}) {state}");
                 }
 
                 var userInput = Console.ReadLine();
@@ -45,22 +59,22 @@ namespace BuildSimulator
                     break;
                 }
 
-                if (int.TryParse(userInput, out int selectedLight))
+                if (int.TryParse(userInput, out int selectedState))
                 {
                     string command;
 
-                    switch (lights[selectedLight - 1])
+                    switch (monitorStates[selectedState - 1])
                     {
-                        case Light.Green:
+                        case MonitorStatus.Succeeded:
                             command = "succeeded";
                             break;
 
-                        case Light.White:
+                        case MonitorStatus.PartiallySucceeded:
                             command = "partiallySucceeded";
                             break;
 
                         default:
-                        case Light.Red:
+                        case MonitorStatus.Failed:
                             command = "failed";
                             break;
                     }
