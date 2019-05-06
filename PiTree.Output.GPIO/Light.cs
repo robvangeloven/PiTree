@@ -1,9 +1,9 @@
-﻿namespace PiTree.OutputServices.GPIO
+﻿namespace PiTree.Output.GPIO
 {
     internal enum Light
     {
-        Green = 7,
-        White = 8,
-        Red = 9
+        Green,
+        Yellow,
+        Red
     }
 }

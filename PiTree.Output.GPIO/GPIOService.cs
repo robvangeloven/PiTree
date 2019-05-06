@@ -1,9 +1,13 @@
-﻿using PiTree.Shared;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PiTree.Shared;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using static PiTree.OutputServices.GPIO.GPIO;
+using Unosquare.RaspberryIO;
+using Unosquare.RaspberryIO.Abstractions;
 
-namespace PiTree.OutputServices.GPIO
+namespace PiTree.Output.GPIO
 {
     public class GPIOService : IOutputService
     {
@@ -12,51 +16,87 @@ namespace PiTree.OutputServices.GPIO
         private const int STROBE_END_DELAY = 3000;
         private const int STROBE_REPEAT = 3;
 
-        private static void Initialize()
+        private IOptionsMonitor<GPIOServiceOptions> _options;
+        private ILogger _logger;
+
+        private IDictionary<Light, IGpioPin> _pins = new Dictionary<Light, IGpioPin>();
+
+        public GPIOService(
+            IOptionsMonitor<GPIOServiceOptions> options,
+            ILogger logger)
         {
-            Init.WiringPiSetup();
-            Init.WiringPiSetupGpio();
-
-            GPIO.pinMode((int)Light.White, (int)GPIOpinmode.Output);
-            GPIO.pinMode((int)Light.Green, (int)GPIOpinmode.Output);
-            GPIO.pinMode((int)Light.Red, (int)GPIOpinmode.Output);
-
-            Console.WriteLine($"[{DateTimeOffset.Now}] Initialize");
+            _options = options;
+            _logger = logger;
         }
 
-        private static void LightsOn()
+        private bool TryParse(int value, out P1 pin)
         {
-            LightOn(Light.White);
+            return Enum.TryParse($"Pin{value}", out pin);
+        }
+
+        private void Initialize()
+        {
+            if (!TryParse(_options.CurrentValue.HardwarePinGreen, out P1 p1Pin))
+            {
+                p1Pin = P1.Pin03;
+            }
+
+            _pins[Light.Green] = Pi.Gpio[p1Pin];
+
+            if (!TryParse(_options.CurrentValue.HardwarePinYellow, out p1Pin))
+            {
+                p1Pin = P1.Pin05;
+            }
+
+            _pins[Light.Yellow] = Pi.Gpio[p1Pin];
+
+            if (!TryParse(_options.CurrentValue.HardwarePinRed, out p1Pin))
+            {
+                p1Pin = P1.Pin07;
+            }
+
+            _pins[Light.Red] = Pi.Gpio[p1Pin];
+
+            _pins[Light.Green].PinMode = GpioPinDriveMode.Output;
+            _pins[Light.Yellow].PinMode = GpioPinDriveMode.Output;
+            _pins[Light.Red].PinMode = GpioPinDriveMode.Output;
+
+            _logger.LogDebug($"[{DateTimeOffset.Now}] Initialize");
+        }
+
+        private void LightsOn()
+        {
             LightOn(Light.Green);
+            LightOn(Light.Yellow);
             LightOn(Light.Red);
 
-            Console.WriteLine($"[{DateTimeOffset.Now}] All lights on");
+            _logger.LogDebug($"[{DateTimeOffset.Now}] All lights on");
         }
 
-        private static void LightsOff()
+        private void LightsOff()
         {
-            LightOff(Light.White);
             LightOff(Light.Green);
+            LightOff(Light.Yellow);
             LightOff(Light.Red);
 
-            Console.WriteLine($"[{DateTimeOffset.Now}] All lights off");
+            _logger.LogDebug($"[{DateTimeOffset.Now}] All lights off");
         }
 
-        private static void LightOn(Light light)
+        private void LightOn(Light light)
         {
-            GPIO.digitalWrite((int)light, 0);
+            _pins[light].Write(GpioPinValue.High);
 
-            Console.WriteLine($"[{DateTimeOffset.Now}] Light on: {light}");
+            _logger.LogDebug($"[{DateTimeOffset.Now}] Light on: {light}");
         }
 
-        private static void LightOff(Light light)
+        private void LightOff(Light light)
         {
-            GPIO.digitalWrite((int)light, 1);
+            _pins[light].Write(GpioPinValue.Low);
 
-            Console.WriteLine($"[{DateTimeOffset.Now}] Light off: {light}");
+            _logger.LogDebug($"[{DateTimeOffset.Now}] Light off: {light}");
         }
 
-        private static async Task Strobe()
+        private async Task Strobe()
         {
             LightsOff();
 
@@ -86,7 +126,7 @@ namespace PiTree.OutputServices.GPIO
 
             if (monitorStatus.HasFlag(MonitorStatus.PartiallySucceeded))
             {
-                LightOn(Light.White);
+                LightOn(Light.Yellow);
             }
 
             if (monitorStatus.HasFlag(MonitorStatus.Failed))

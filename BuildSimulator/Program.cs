@@ -1,7 +1,10 @@
 ﻿using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using PiTree.OutputServices.GPIO;
+using PiTree.Monitor.ServiceBus;
 using PiTree.Shared;
 using System;
 using System.IO;
@@ -19,14 +22,21 @@ namespace BuildSimulator
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile("appsettings_dev.json", optional: true, reloadOnChange: true);
 
-            IConfigurationRoot configuration = builder.Build();
+            var config = builder.Build();
 
-            string serviceBusConnectionString = configuration["QueueConnectionString"];
-            string queueName = configuration["QueueName"];
+            // Setup DI
+            var services = new ServiceCollection()
+                .AddLogging(x =>
+                {
+                    x.AddConsole();
+                    x.AddDebug();
+                })
+                .Configure<ServiceBusOptions>(config.GetSection("ServiceBusOptions"))
+                .BuildServiceProvider();
 
-            var queueClient = new QueueClient(serviceBusConnectionString, queueName);
+            var serviceBusOptions = services.GetService<IOptionsMonitor<ServiceBusOptions>>();
 
-            var outputService = new GPIOService();
+            var queueClient = new QueueClient(serviceBusOptions.CurrentValue.QueueConnectionString, serviceBusOptions.CurrentValue.QueueName);
 
             while (true)
             {

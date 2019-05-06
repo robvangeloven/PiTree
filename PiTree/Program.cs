@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PiTree.Monitor.AzureDevopsAPI;
 using PiTree.Monitor.ServiceBus;
-using PiTree.OutputServices.GPIO;
+using PiTree.Output.GPIO;
 using PiTree.Shared;
 
 namespace PiTree
@@ -38,6 +38,7 @@ namespace PiTree
                 .AddSingleton<IOutputService, GPIOService>()
                 .Configure<AzureDevopsApiOptions>(config.GetSection("AzureDevopsApi"))
                 .Configure<ServiceBusOptions>(config.GetSection("ServiceBusOptions"))
+                .Configure<GPIOServiceOptions>(config.GetSection("GPIOServiceOptions"))
                 .BuildServiceProvider();
 
             var logger = services

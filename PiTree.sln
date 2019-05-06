@@ -7,21 +7,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiTree", "PiTree\PiTree.csp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{751B0292-EA7D-4CE1-8DE8-697223F8B349}"
 	ProjectSection(SolutionItems) = preProject
-		Scripts\build.sh = Scripts\build.sh
 		docker-compose.yml = docker-compose.yml
-		Scripts\init.sh = Scripts\init.sh
-		Scripts\run.sh = Scripts\run.sh
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BuildSimulator", "BuildSimulator\BuildSimulator.csproj", "{7B0F8E16-245C-4ED0-AB54-C7EC83E178DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiTree.Shared", "PiTree.Interfaces\PiTree.Shared.csproj", "{856FBE66-CEA9-45CF-A580-07F64B2D6DF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiTree.Shared", "PiTree.Interfaces\PiTree.Shared.csproj", "{856FBE66-CEA9-45CF-A580-07F64B2D6DF8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiTree.Monitor.AzureDevopsAPI", "PiTree.Monitor.AzureDevopsAPI\PiTree.Monitor.AzureDevopsAPI.csproj", "{C0B8C0C6-2432-4991-A934-1D48221DD7B9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiTree.Monitor.AzureDevopsAPI", "PiTree.Monitor.AzureDevopsAPI\PiTree.Monitor.AzureDevopsAPI.csproj", "{C0B8C0C6-2432-4991-A934-1D48221DD7B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiTree.Monitor.ServiceBus", "PiTree.Monitor.ServiceBus\PiTree.Monitor.ServiceBus.csproj", "{D540FEB7-521A-4A4B-A7A3-EBA7A944B223}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiTree.Monitor.ServiceBus", "PiTree.Monitor.ServiceBus\PiTree.Monitor.ServiceBus.csproj", "{D540FEB7-521A-4A4B-A7A3-EBA7A944B223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiTree.Output.GPIO", "PiTree.Output.GPIO\PiTree.Output.GPIO.csproj", "{5A3EA2EB-6ADA-4DAD-AA08-E5FD397C5380}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PiTree.Output.GPIO", "PiTree.Output.GPIO\PiTree.Output.GPIO.csproj", "{5A3EA2EB-6ADA-4DAD-AA08-E5FD397C5380}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
