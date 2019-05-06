@@ -5,11 +5,10 @@ services:
     image: ${DOCKER_REGISTRY-}pi-tree
     build:
       context: .
-      dockerfile: PiTree/Dockerfile
+      dockerfile: Dockerfile
     container_name: pi-tree
     volumes:
       - /PATH_TO_YOUR_CONFIG:/app/config
-      - /etc/localtime:/etc/localtime:ro
     devices:
       - /dev/gpiomem:/dev/gpiomem
     restart: always
