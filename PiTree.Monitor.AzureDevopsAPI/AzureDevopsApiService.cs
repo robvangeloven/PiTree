@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PiTree.Shared;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace PiTree.Monitor.AzureDevopsAPI
 {
@@ -16,13 +17,16 @@ namespace PiTree.Monitor.AzureDevopsAPI
 
         private IOptionsMonitor<AzureDevopsApiOptions> _options;
         private IOutputService _outputService;
+        private ILogger<AzureDevopsApiService> _logger;
 
         public AzureDevopsApiService(
             IOutputService outputService,
-            IOptionsMonitor<AzureDevopsApiOptions> options)
+            IOptionsMonitor<AzureDevopsApiOptions> options,
+            ILogger<AzureDevopsApiService> logger)
         {
             _outputService = outputService;
             _options = options;
+            _logger = logger;
         }
 
         private async Task<MonitorStatus> GetBuildStatus()
@@ -66,7 +70,7 @@ namespace PiTree.Monitor.AzureDevopsAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTimeOffset.Now}] {ex.ToString()}");
+                _logger.LogError($"[{DateTimeOffset.Now}] {ex.ToString()}");
             }
 
             return result;

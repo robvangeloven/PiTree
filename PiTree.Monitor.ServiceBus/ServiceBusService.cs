@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PiTree.Shared;
@@ -16,13 +17,16 @@ namespace PiTree.Monitor.ServiceBus
         private static IQueueClient _queueClient;
         private IOutputService _outputService;
         private IOptionsMonitor<ServiceBusOptions> _options;
+        private ILogger _logger;
 
         public ServiceBusService(
             IOutputService outputService,
-            IOptionsMonitor<ServiceBusOptions> options)
+            IOptionsMonitor<ServiceBusOptions> options,
+            ILogger logger)
         {
             _outputService = outputService;
             _options = options;
+            _logger = logger;
         }
 
         public async Task Start()
@@ -87,7 +91,7 @@ namespace PiTree.Monitor.ServiceBus
         {
             try
             {
-                Console.WriteLine(JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body)));
+                _logger.LogDebug(JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body)).ToString());
 
                 // Process the message
                 dynamic body = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message.Body));
@@ -96,7 +100,7 @@ namespace PiTree.Monitor.ServiceBus
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{DateTimeOffset.Now}] {ex.ToString()}");
+                _logger.LogError($"[{DateTimeOffset.Now}] {ex.ToString()}");
             }
 
             // Complete the message so that it is not received again.
@@ -105,16 +109,14 @@ namespace PiTree.Monitor.ServiceBus
             await _queueClient.CompleteAsync(message.SystemProperties.LockToken);
         }
 
-        private Task ExceptionReceivedHandler(ExceptionReceivedEventArgs exceptionReceivedEventArgs)
-        {
-            Console.WriteLine($"Message handler encountered an exception {exceptionReceivedEventArgs.Exception}.");
-            return Task.CompletedTask;
-        }
-
         private void RegisterOnMessageHandlerAndReceiveMessages()
         {
             // Configure the MessageHandler Options in terms of exception handling, number of concurrent messages to deliver etc.
-            var messageHandlerOptions = new MessageHandlerOptions(ExceptionReceivedHandler)
+            var messageHandlerOptions = new MessageHandlerOptions(exceptionReceivedEvent =>
+            {
+                _logger.LogError($"Message handler encountered an exception {exceptionReceivedEvent.Exception}.");
+                return Task.CompletedTask;
+            })
             {
                 // Maximum number of Concurrent calls to the callback `ProcessMessagesAsync`, set to 1 for simplicity.
                 // Set it according to how many messages the application wants to process in parallel.
