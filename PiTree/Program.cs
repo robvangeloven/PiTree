@@ -37,10 +37,10 @@ namespace PiTree
 
             // Setup DI
             var services = new ServiceCollection()
-                .AddLogging(x =>
+                .AddLogging(loggingBuilder =>
                 {
-                    x.AddConsole();
-                    x.AddDebug();
+                    loggingBuilder.AddConsole();
+                    loggingBuilder.AddDebug();
                 })
                 //.AddSingleton<AzureDevopsApiService>()
                 .AddSingleton<IMonitorService, ServiceBusService>()
@@ -50,11 +50,9 @@ namespace PiTree
                 .Configure<GPIOServiceOptions>(config.GetSection("GPIOServiceOptions"))
                 .BuildServiceProvider();
 
-            var logger = services
-                .GetService<ILoggerFactory>()
-                .CreateLogger<Program>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
 
-            logger.LogDebug("Starting PiTree");
+            logger.LogInformation("Starting PiTree");
 
             var outputService = services.GetService<IOutputService>();
             var monitorService = services.GetService<IMonitorService>();
@@ -68,7 +66,7 @@ namespace PiTree
 
             _quitEvent.WaitOne();
 
-            logger.LogDebug("PiTree stopping");
+            logger.LogInformation("PiTree stopping");
 
             await monitorService.Stop();
         }

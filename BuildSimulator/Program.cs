@@ -26,10 +26,10 @@ namespace BuildSimulator
 
             // Setup DI
             var services = new ServiceCollection()
-                .AddLogging(x =>
+                .AddLogging(loggingBuilder =>
                 {
-                    x.AddConsole();
-                    x.AddDebug();
+                    loggingBuilder.AddConsole();
+                    loggingBuilder.AddDebug();
                 })
                 .Configure<ServiceBusOptions>(config.GetSection("ServiceBusOptions"))
                 .BuildServiceProvider();

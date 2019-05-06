@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Abstractions;
+using Unosquare.WiringPi;
 
 namespace PiTree.Output.GPIO
 {
@@ -36,6 +37,8 @@ namespace PiTree.Output.GPIO
 
         private void Initialize()
         {
+            Pi.Init<BootstrapWiringPi>();
+
             if (!TryParse(_options.CurrentValue.HardwarePinGreen, out P1 p1Pin))
             {
                 p1Pin = P1.Pin03;
@@ -61,7 +64,7 @@ namespace PiTree.Output.GPIO
             _pins[Light.Yellow].PinMode = GpioPinDriveMode.Output;
             _pins[Light.Red].PinMode = GpioPinDriveMode.Output;
 
-            _logger.LogDebug($"[{DateTimeOffset.Now}] Initialize");
+            _logger.LogInformation($"[{DateTimeOffset.Now}] Initialize");
         }
 
         private void LightsOn()
@@ -70,7 +73,7 @@ namespace PiTree.Output.GPIO
             LightOn(Light.Yellow);
             LightOn(Light.Red);
 
-            _logger.LogDebug($"[{DateTimeOffset.Now}] All lights on");
+            _logger.LogInformation($"[{DateTimeOffset.Now}] All lights on");
         }
 
         private void LightsOff()
@@ -79,21 +82,21 @@ namespace PiTree.Output.GPIO
             LightOff(Light.Yellow);
             LightOff(Light.Red);
 
-            _logger.LogDebug($"[{DateTimeOffset.Now}] All lights off");
+            _logger.LogInformation($"[{DateTimeOffset.Now}] All lights off");
         }
 
         private void LightOn(Light light)
         {
             _pins[light].Write(GpioPinValue.High);
 
-            _logger.LogDebug($"[{DateTimeOffset.Now}] Light on: {light}");
+            _logger.LogInformation($"[{DateTimeOffset.Now}] Light on: {light}");
         }
 
         private void LightOff(Light light)
         {
             _pins[light].Write(GpioPinValue.Low);
 
-            _logger.LogDebug($"[{DateTimeOffset.Now}] Light off: {light}");
+            _logger.LogInformation($"[{DateTimeOffset.Now}] Light off: {light}");
         }
 
         private async Task Strobe()
