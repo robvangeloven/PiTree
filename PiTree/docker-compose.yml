@@ -4,7 +4,7 @@ version: '3'
       container_name: pi-tree
       image: homeassistant/home-assistant
       volumes:
-        - /PATH_TO_YOUR_CONFIG:/config
+        - /PATH_TO_YOUR_CONFIG:/app/config
         - /etc/localtime:/etc/localtime:ro
       devices:
         - /dev/gpiomem:/dev/gpiomem
