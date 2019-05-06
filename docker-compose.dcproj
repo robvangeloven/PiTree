@@ -8,5 +8,8 @@
   <ItemGroup>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
+    <None Include="Dockerfile" />
+    <None Include="hooks\post_checkout" />
+    <None Include="hooks\pre_build" />
   </ItemGroup>
 </Project>
