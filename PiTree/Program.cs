@@ -18,10 +18,19 @@ namespace PiTree
 
         private static async Task Main(string[] args)
         {
+            var userConfigDirectory = $"{Directory.GetCurrentDirectory()}{Path.DirectorySeparatorChar}config";
+
+            Directory.CreateDirectory(userConfigDirectory);
+
+            if (!File.Exists($"{userConfigDirectory}{Path.DirectorySeparatorChar}appsettings.json"))
+            {
+                File.Copy($"{Directory.GetCurrentDirectory()}{Path.DirectorySeparatorChar}appsettings.json", $"{userConfigDirectory}{Path.DirectorySeparatorChar}appsettings.json");
+            }
+
             // Setup Config
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"config{Path.DirectorySeparatorChar}appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile("appsettings_dev.json", optional: true, reloadOnChange: true);
 
             var config = builder.Build();

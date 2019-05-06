@@ -23,7 +23,7 @@ namespace PiTree.Output.GPIO
 
         public GPIOService(
             IOptionsMonitor<GPIOServiceOptions> options,
-            ILogger logger)
+            ILogger<GPIOService> logger)
         {
             _options = options;
             _logger = logger;

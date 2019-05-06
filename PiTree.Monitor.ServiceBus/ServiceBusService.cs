@@ -22,7 +22,7 @@ namespace PiTree.Monitor.ServiceBus
         public ServiceBusService(
             IOutputService outputService,
             IOptionsMonitor<ServiceBusOptions> options,
-            ILogger logger)
+            ILogger<ServiceBusService> logger)
         {
             _outputService = outputService;
             _options = options;
