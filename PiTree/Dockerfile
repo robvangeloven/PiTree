@@ -1,30 +1,26 @@
-﻿FROM microsoft/dotnet:2.1-sdk AS build-env
+FROM microsoft/dotnet:2.1-runtime AS base
+WORKDIR /app
+
+FROM microsoft/dotnet:2.1-sdk AS build
+WORKDIR /src
+# Copy qemu-arm-static to enable cross platform compiling:
 COPY qemu-arm-static /usr/bin/
+# Copy all source projects
+COPY PiTree/PiTree.csproj PiTree/
+COPY PiTree.Monitor.AzureDevopsAPI/PiTree.Monitor.AzureDevopsAPI.csproj PiTree.Monitor.AzureDevopsAPI/
+COPY PiTree.Interfaces/PiTree.Shared.csproj PiTree.Interfaces/
+COPY PiTree.Output.GPIO/PiTree.Output.GPIO.csproj PiTree.Output.GPIO/
+COPY PiTree.Monitor.ServiceBus/PiTree.Monitor.ServiceBus.csproj PiTree.Monitor.ServiceBus/
+RUN dotnet restore PiTree/PiTree.csproj
+# Copy everything else
+COPY . .
+WORKDIR /src/PiTree
+RUN dotnet build PiTree.csproj -c Release -o /app
+
+FROM build AS publish
+RUN dotnet publish PiTree.csproj -c Release -o /app
+
+FROM base AS final
 WORKDIR /app
-
-# Copy csproj and restore as distinct layers
-COPY PiTree.csproj ./
-RUN dotnet restore
-
-# Copy everything else and build
-COPY . ./
-# add IL Linker package
-#RUN dotnet add package ILLink.Tasks -v 0.1.5-preview-1841731 -s https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
-RUN dotnet publish -c Release -o out /p:ShowLinkerSizeComparison=true
-
-# Build runtime image
-FROM microsoft/dotnet:2.1-runtime AS runtime
-WORKDIR /app
-COPY --from=build-env /app/out ./
-
-RUN apt-get update && apt-get install -y git-core \
-    sudo \
-    build-essential \
-    gcc \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN git clone git://git.drogon.net/wiringPi
-RUN cd wiringPi && ./build
-
+COPY --from=publish /app .
 ENTRYPOINT ["dotnet", "PiTree.dll"]
