@@ -1,7 +1,7 @@
 FROM microsoft/dotnet:2.1-runtime AS base
 WORKDIR /app
 
-FROM microsoft/dotnet:2.1-sdk AS build
+FROM microsoft/dotnet:2.1-sdk-stretch-slim-arm32v AS build
 WORKDIR /src
 # Copy qemu-arm-static to enable cross platform compiling:
 COPY qemu-arm-static /usr/bin/
