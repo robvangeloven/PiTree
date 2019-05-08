@@ -11,7 +11,7 @@ COPY PiTree.Monitor.AzureDevopsAPI/PiTree.Monitor.AzureDevopsAPI.csproj PiTree.M
 COPY PiTree.Interfaces/PiTree.Shared.csproj PiTree.Interfaces/
 COPY PiTree.Output.GPIO/PiTree.Output.GPIO.csproj PiTree.Output.GPIO/
 COPY PiTree.Monitor.ServiceBus/PiTree.Monitor.ServiceBus.csproj PiTree.Monitor.ServiceBus/
-RUN dotnet restore --verbosity detailed PiTree/PiTree.csproj
+RUN dotnet restore --verbosity normal PiTree/PiTree.csproj
 # Copy everything else
 COPY . .
 WORKDIR /src/PiTree
