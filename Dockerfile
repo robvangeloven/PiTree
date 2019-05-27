@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/runtime:2.2 AS base
+FROM mcr.microsoft.com/dotnet/core/runtime:2.2-stretch-slim-arm32v7 AS base
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
