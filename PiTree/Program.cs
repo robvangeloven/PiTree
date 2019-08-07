@@ -22,6 +22,8 @@ namespace PiTree
 
         private static async Task Main(string[] args)
         {
+            bool firstRun = false;
+
             var userConfigDirectory = $"{Directory.GetCurrentDirectory()}{Path.DirectorySeparatorChar}config";
 
             Directory.CreateDirectory(userConfigDirectory);
@@ -29,6 +31,7 @@ namespace PiTree
             if (!File.Exists($"{userConfigDirectory}{Path.DirectorySeparatorChar}appsettings.json"))
             {
                 File.Copy($"{Directory.GetCurrentDirectory()}{Path.DirectorySeparatorChar}appsettings.json", $"{userConfigDirectory}{Path.DirectorySeparatorChar}appsettings.json");
+                firstRun = true;
             }
 
             // Setup Config
@@ -71,6 +74,12 @@ namespace PiTree
             var logger = services.GetRequiredService<ILogger<Program>>();
 
             logger.LogInformation("Starting PiTree");
+
+            if (firstRun)
+            {
+                logger.LogWarning("Configuration has been created, please update the configuration file and restart");
+                Environment.Exit(0);
+            }
 
             var outputService = services.GetService<IOutputService>();
             var monitorService = services.GetService<IMonitorService>();
